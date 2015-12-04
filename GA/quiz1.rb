@@ -75,7 +75,7 @@ class Genes
     # 突然変異
     # 単一遺伝子座突然変異
     # 変異箇所 : mutation
-    # 変異確率 : 1 (?)
+    # 変異確率 : 1 (...?)
     mutation = rand(c)
     children[0].ans[mutation] = rand(3) if mutation < c
     mutation = rand(c)
