@@ -1,5 +1,12 @@
 # 写経
 
+# 個体数   : 10
+# 遺伝子長 : 10
+# 選択方法 : エリート選択
+# 交叉方法 : 一点交叉
+# 交叉率   : 0.2
+# 突然変異率 : 1 (?)
+
 class Genes
   def initialize(gene_count = 10, quiz_count = 10)
     @generation = 1
@@ -39,7 +46,9 @@ class Genes
 
   # 世代を進める
   # 上位2つの個体を親として交叉を行う。
-  # すでに各個体はソートされているので、適応度の低い2つが置き換わる。他は据え置き（エリート選択？）
+  # 適応度の低い2つが置き換わる。他は据え置き（エリート選択？）
+
+  # 下位の2つの個体が置き換わる → 交叉率 = 2 / gene_count
   def next_generation
     @generation += 1
     pair = []
@@ -50,7 +59,9 @@ class Genes
     @genes[@genes.length-1] = pair[1]
   end
 
-  # 一点交叉?
+  # 一点交叉
+  # 遺伝子長 : c
+  # 交叉点   : cross
   def breed(parents)
     c = parents[0].count
     children = [Gene.new(c), Gene.new(c)]
@@ -62,10 +73,13 @@ class Genes
     end
 
     # 突然変異
+    # 単一遺伝子座突然変異
+    # 変異箇所 : mutation
+    # 変異確率 : 1 (?)
     mutation = rand(c)
     children[0].ans[mutation] = rand(3) if mutation < c
     mutation = rand(c)
-    children[1].ans[mutation]=rand(3) if mutation < c
+    children[1].ans[mutation] = rand(3) if mutation < c
     children
   end
 
