@@ -1,42 +1,113 @@
-@data = '50
-5
-60,10
-100,20
-120,30
-210,45
-10,4
-20
-8
-10,7
-4,2
-5,9
-1,4
-7,9
-3,7
-6,4
-3,5
-0
-'.split("\n")
+=begin
+参考
+遺伝的アルゴリズム - wikipedia
+https://ja.wikipedia.org/wiki/%E9%81%BA%E4%BC%9D%E7%9A%84%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0#.E4.B8.80.E7.82.B9.E4.BA.A4.E5.8F.89
+遺伝的アルゴリズム GA 入門
+～遺伝的アルゴリズムを用いたテストケースの生成～
+http://www.zipc.com/cesl/info/04.pdf
+遺伝的アルゴリズムの用語集
+http://mikilab.doshisha.ac.jp/dia/research/pdga/words.html
+組み合わせ最適化 - wikipedia
+https://ja.wikipedia.org/wiki/%E7%B5%84%E5%90%88%E3%81%9B%E6%9C%80%E9%81%A9%E5%8C%96#.E5.95.8F.E9.A1.8C.E4.BE.8B
+
+GA/DGAのパラメータ(3) -- 選択（エリート保存戦略について）
+http://mikilab.doshisha.ac.jp/dia/research/person/jiro/reports/GAparams/GAparams03.html
+GA/DGAのパラメータ(2) -- 選択（スケーリング手法，選択手法）
+http://mikilab.doshisha.ac.jp/dia/research/person/jiro/reports/GAparams/GAparams02.html
+
+ＧＡによるナーススケジューリング問題の解法
+http://www.kushiro-ct.ac.jp/library/kiyo/kiyo36/kosimizu.pdf
+
+分散遺伝的アルゴリズムにおける
+パラメータの検討
+http://mikilab.doshisha.ac.jp/dia/research/person/jiro/thesis/graduate.pdf
+
+スライド
+https://t.co/vSYMg58sA2
+
+Ruby関数の引数を配列でまとめて渡す。
+http://takuya-1st.hatenablog.jp/entry/2014/02/24/174150
+
+遺伝アルゴリズムによる NQueen 解法
+http://www.info.kindai.ac.jp/~takasi-i/thesis/2011_07-1-037-0276_M_Imamura_thesis.pdf
+エイト・クイーン - wikipedia
+https://ja.wikipedia.org/wiki/%E3%82%A8%E3%82%A4%E3%83%88%E3%83%BB%E3%82%AF%E3%82%A4%E3%83%BC%E3%83%B3
+=end
+
+@data = '80
+50
+2,21
+10,22
+7,28
+2,21
+4,12
+9,24
+10,15
+7,2
+8,25
+5,28
+3,4
+10,22
+9,36
+8,2
+8,7
+5,40
+7,14
+3,40
+9,33
+7,21
+2,28
+10,22
+7,14
+9,36
+7,14
+2,21
+10,18
+4,12
+9,24
+10,15
+4,21
+7,2
+8,25
+5,28
+2,28
+3,4
+10,22
+9,36
+7,31
+8,2
+8,7
+5,40
+7,14
+5,4
+7,28
+3,40
+9,33
+7,35
+7,21
+9,20
+0'.split("\n")
 
 # @data = readlines
 
 P_CROSS = 0.6
 P_MUTATION = 0.01
 
-Item = Struct.new(:value, :weight)
+#Item = Struct.new(:value, :weight)
+Item = Struct.new(:weight, :value)
 
 Problem = []
 
 def init(count = 0)
-  if @data[0] != '0'
+#  if @data[0] != '0'
     Problem << {Max_weight: @data[0].to_i, N: @data[1].to_i, Items: Array.new(@data[1].to_i)}
     @data[1].to_i.times do |i|
       Problem[count][:Items][i] = Item.new(*@data[i+2].split(',').map(&:to_i))
     end
 #    p Problem[count]
     @data = @data[(@data[1].to_i+2)...@data.length]
-    init(count+1)
-  end
+#    init(count+1)
+#  end
 end
 
 def aoj
@@ -93,7 +164,7 @@ class GA
           weight_sum += @items[index].weight
         end
       end
-      if weight_sum <= @max && weight_sum != 0
+      if weight_sum <= @max && weight_sum != 1
         gene.score = value_sum
       else
         gene.score = 1
@@ -158,7 +229,7 @@ class GA
 
     #    @parents = Marshal.load(Marshal.dump(@genes))
     @parents = Array.new(@population)
-    @elite = Marshal.load(Marshal.dump(@genes.first))
+    @elite = Marshal.load(Marshal.dump(@genes[0]))
     @parents[0] = @elite
 
 #    p @genes
@@ -181,7 +252,7 @@ class GA
 #    count = 0
     @population.times do |i|
       @population.times do |j|
-        if rand < P_CROSS
+        if rand <= P_CROSS
           crossover(i, j) #, count, count+1)
 #          count += 2
 #          break if count > @population
@@ -252,7 +323,7 @@ class GA
 
   def mutation
     @genes.each_with_index do |gene, index|
-      if rand < P_MUTATION
+      if rand <= P_MUTATION
         i = rand(@size)
         gene.chromosome[i] = (gene.chromosome[i] - 1).abs
       end
@@ -278,16 +349,16 @@ end
 if __FILE__ == $0
 #  aoj
   init
-#  p Problem
+  p Problem
 #  p Problem[0][:Items][0].weight
 
-  population = 100
+  population = 32
 
   Problem.each do |problem|
     ga = GA.new(population, problem[:Items], problem[:Max_weight])
     ga.start do |generation, genes, max_score, average|
-      puts 'generation : ' + generation.to_s
-      puts 'elite : ' + genes[0].to_s
+#      puts 'generation : ' + generation.to_s
+#      puts 'elite : ' + genes[0].to_s
 #      genes.each do |item|
 #        p item
 #      end
