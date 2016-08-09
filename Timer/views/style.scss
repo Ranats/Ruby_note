@@ -1,0 +1,64 @@
+//$font_color: #D0FFD0;
+$font_color:white;
+//$bg_color: #325F82;
+$bg_color:black;
+$canvas_color: #FFFFFF;
+@mixin rounded($topl:32px, $topr:32px, $btmr:32px, $btml:32px) {
+    border-radius: $topl $topr $btmr $btml;
+    -moz-border-radius: $topl $topr $btmr $btml;
+}
+* {
+    margin: 0;
+    padding: 0;
+    font-family: Trebuchet ms, Verdana, Myriad Web, Syntax, sans-serif
+}
+body {
+    color: $font_color;
+    background-color: $bg_color;
+    width: 1000px;
+    margin: 60px auto;
+}
+header {
+    display:block;
+}
+#main {
+canvas#clock {
+    border: thin solid #444;
+    background-color: $canvas_color;
+@include rounded();
+}
+}
+footer {
+    display: block;
+    height: 30px;
+    text-align: center;
+    margin-top: 20px;
+a {
+    text-decoration: none;
+    color: $font_color;
+&:visited {
+     color: $font_color;
+ }
+}
+}
+
+p{
+    margin-left: 50px;
+    font-size: 30px;
+}
+
+p#RealtimeCountdownArea{
+    text-align: center;
+    font-size:50px;
+    padding: 50px;
+}
+
+select{
+    margin-left: 50px;
+    font-size: 30px;
+}
+
+input{
+    margin-left: 50px;
+    font-size: 30px;
+}

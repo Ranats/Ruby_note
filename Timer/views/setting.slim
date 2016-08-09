@@ -1,0 +1,45 @@
+- title = ''
+- deadline = {:Y=>'',}
+- today = Time.now
+
+button
+  a href='/' back
+
+form action='confirm' method='post'
+  p Deadline Title
+
+  input type='text' id='title' value=''
+
+  p Deadline
+
+  select name='year'
+    -20.times do |i|
+      - value = today.year + i
+      option value='#{value}' #{if value==today.year {selected}} #{value}
+
+  select name='month'
+    -12.times do |i|
+      - if i+1==today.month
+        option value='#{i+1}' selected=true #{i+1}
+      -else
+        option value='#{i+1}' #{i+1}
+
+  select name='day'
+    -31.times do |i|
+      - if i+1==today.day
+        option value='#{i+1}' selected=true #{i+1}
+      -else
+        option value='#{i+1}' #{i+1}
+
+  select name='hour'
+    - 24.times do |i|
+      option value='#{i}' #{i}
+  select name='min'
+    - 60.times do |i|
+      option value='#{i}' #{i}
+  select name='sec'
+    - 60.times do |i|
+      option value='#{i}' #{i}
+  <br>
+  <br>
+  input type='submit' value='設定'

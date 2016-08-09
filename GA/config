@@ -1,0 +1,7 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = true
+[remote "ga"]
+	url = https://Ranats:sopurani885@github.com/Ranats/GA.git
+	fetch = +refs/heads/*:refs/remotes/ga/*
