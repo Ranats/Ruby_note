@@ -15,9 +15,24 @@ $canvas_color: #FFFFFF;
 body {
     color: $font_color;
     background-color: $bg_color;
-    width: 1000px;
-    margin: 60px auto;
+//    width: 1000px;
+//    margin: 60px auto;
+    margin: 0;
+    padding: 0;
+    positiion: relative;
+    min-width: 600px;   /*中央配置するボックスの横幅*/
+    min-height: 400px;  /*中央配置するボックスの縦幅*/
+    height: 100%;
 }
+.centerMiddle{
+//    margin: -200px 0 0 -300px;  /*縦横半分をネガティブマージンでずらす*/
+    position: absolute;     /*body要素に対して絶対配置*/
+    top: 25%;       /*上端を中央に*/
+    left: 10%;      /*左端を中央に*/
+    width: 90vw;   /*横幅*/
+    height: 50vh;  /*縦幅*/
+}
+
 header {
     display:block;
 }
@@ -44,12 +59,12 @@ a {
 
 p{
     margin-left: 50px;
-    font-size: 30px;
+    font-size: 3vw;
 }
 
 p#RealtimeCountdownArea{
     text-align: center;
-    font-size:50px;
+    font-size:5vw;
     padding: 50px;
 }
 

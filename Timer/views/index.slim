@@ -1,6 +1,4 @@
 //#main
-  canvas#clock width='1000px' height='500px' Only for HTML5 adapted browsers
-
 - deadlines = {title:@title,deadline:@deadline} #=> :title :deadline=>elem
 
 - elem = [{id:'userYear',value:'2016'},
@@ -11,18 +9,18 @@
           {id:'userSec',value:'0'}]
 - msg = '中間発表'
 
-button
-  a href='setting' Setting
+//button
+//    a href='setting' Setting
 
 //- @title
 /= 'hoge'
 
 - elem.each do |hash|
-  input type='hidden' id=hash[:id] value=hash[:value]
+    input type='hidden' id=hash[:id] value=hash[:value]
 
-p #{msg}まで  あと...
-
-p id='RealtimeCountdownArea' カウントダウンタイマー
+div.centerMiddle
+  p #{msg}まで  あと...
+  p id='RealtimeCountdownArea' カウントダウンタイマー
 
 script type='text/javascript' src='/javascripts/countdown.js' charset='utf-8'
 
