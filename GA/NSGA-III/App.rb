@@ -1,8 +1,8 @@
 require './Get_aroma'
 #include Scanner
 require './Aroma'
-#require './NSGA-III'
-#require './NSGA-IIIb'
+require './NSGA-III'
+require './Gene'
 
 module Settings
   module_function
@@ -29,10 +29,20 @@ if __FILE__ == $0
 
   Aroma.create(request)
 
-  population = Array.new(Settings.individual_size) { Gene.new(Aroma.get.size) }
+  # 精油の数を遺伝子長として初期化 => [0,0,1,1,0,0,...]
+#  population = Array.new(Settings.individual_size) { Gene_b.new(Aroma.get.size) }
+
+  # B
+  # requestサイズで遺伝子を初期化　=> [0, 15, 3] , [1, 9, 3] , ...
+  # と同時に初期集団を評価
+  population = Array.new(Settings.individual_size) { Gene_a.new(request.size) }
+
 
   population.map{|pop| p pop.fitness; }#pop.chromosome.each_with_index do |bit,i| p Aroma.get[i][:name] end}
 
+  # Step.1 t=0, 探索母集団Qtを初期化し、アーカイブ母集団Ptを空にする
   agent = NSGA_III.new(population)
+
+  agent.next_generation
 
 end
