@@ -1,4 +1,5 @@
 module Scanner
+  Encoding.default_external = 'UTF-8'
   module_function
   def get_aroma(request)
     aromas = []

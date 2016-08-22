@@ -1,7 +1,7 @@
 require './Get_aroma'
 #include Scanner
 require './Aroma'
-require './NSGA-III'
+require './NSGA'
 require './Gene'
 
 module Settings
@@ -41,7 +41,7 @@ if __FILE__ == $0
   population.map{|pop| p pop.fitness; }#pop.chromosome.each_with_index do |bit,i| p Aroma.get[i][:name] end}
 
   # Step.1 t=0, 探索母集団Qtを初期化し、アーカイブ母集団Ptを空にする
-  agent = NSGA_III.new(population)
+  agent = NSGA_II.new(population)
 
   agent.next_generation
 

@@ -1,7 +1,7 @@
 require './Aroma' # DB
 require 'matrix'  # vectorを使うためのgem
 
-class NSGA_III
+class NSGA_II
 
   def initialize(population)
     @population = population
