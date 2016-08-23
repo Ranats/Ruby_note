@@ -4,6 +4,8 @@ require 'matrix'  # vectorを使うためのgem
 class NSGA_II
 
   def initialize(population)
+
+    # Step.1 t=0, 探索母集団Q_tを初期化し，アーカイブ母集団P_tを空にする．
     @population = population
     @generation = 0
 
@@ -69,6 +71,14 @@ class NSGA_II
 
   def next_generation
 
+    # N=P_tの大きさ
+    # 1.P_t+1...非優越ソートを行い，ランク付けを行った個体，の上位N個体
+    # 2.P_t+1の大きさ = N ?
+    # 3.P_t+1から混雑度トーナメント選択により 大きさN のQ_t+1を生成
+    # 4.R_t = P_t+1 + Q_t+1
+    # 評価し，1に戻る
+
+
     # Step.2 探索母集団Q_tの評価を行う
     @population.each {|pop| pop.calc_fitness}
 
@@ -78,8 +88,6 @@ class NSGA_II
     # R_t に対して非優越ソートを行い、
     f_non_dominated_sort(search_population)
     # 全体をフロント毎(ランク毎)に分類する：F_i, i=1, 2, ...
-
-
 
 
 #    search_population.sort_by{|p| p.rank }.each do |s|
