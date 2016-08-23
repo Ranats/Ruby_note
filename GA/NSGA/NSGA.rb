@@ -57,7 +57,7 @@ class NSGA_II
   end
 
   def crossover(pair, position)
-    child = Array.new(2,Gene.new(Aroma.get.size))
+    child = Array.new(2,Gene_a.new(Aroma.get.size))
     child[0].chromosome = pair[0].chromosome.take(position) + pair[1].chromosome.drop(position)
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
     child
