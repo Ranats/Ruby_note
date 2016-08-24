@@ -1,8 +1,8 @@
 require 'matrix'
 
 class Gene
-  attr_accessor :rank, :ruled, :ruling
-  attr_reader :chromosome, :fitness
+  attr_accessor :rank, :ruled, :ruling, :chromosome
+  attr_reader :fitness
 
   def initialize(length)
     @chromosome = []

@@ -5,18 +5,16 @@ class NSGA_II
 
   def initialize(population)
 
-    # Step.1 t=0, 探索母集団Q_tを初期化し，アーカイブ母集団P_tを空にする．
+    # Step.1 t=0, 探索母集団P_tを初期化し，アーカイブ母集団Q_tを空にする．
     @population = population
     @generation = 0
+
+    @limit_size = population.size
 
     @pareto = []
 
     # 減少率
     @reduction_rate = population.size / 10
-
-  end
-
-  def selection
 
   end
 
@@ -35,7 +33,7 @@ class NSGA_II
   #    体にランクが与えられるまで繰り返すことで，順位付け
   #    を行う操作
   # つまりランク1をつけたら、それらの個体は除外して次のランクをつける。みたいな？
-  def f_non_dominated_sort(population)
+  def fast_nondominated_sort(population)
     population.each do |pop|
       pop.ruled = population.count{ |other| other.fitness.norm < pop.fitness.norm}
 #      pop.ruling = population.count{ |other|  pop.fitness.norm < other.fitness.norm}
@@ -46,20 +44,25 @@ class NSGA_II
       population.map{|pop| pop.rank = current_rank if pop.ruled == r}
     end
 
-    puts "fitness.norm : ruled_individual : rank"
-    population.sort_by{|p| p.ruled }.each do |s|
-      puts "#{s.fitness.norm} : #{s.ruled} : #{s.rank}"
-    end
+#    puts "fitness.norm : ruled_individual : rank"
+#    population.sort_by{|p| p.ruled }.each do |s|
+#      puts "#{s.fitness.norm} : #{s.ruled} : #{s.rank}"
+#    end
   end
 
   def crowding_sort(population)
     # ソートされたものを返す
 
-    return population
+    population
+  end
+
+  def crowding_tournament_select(population)
+
+    population
   end
 
   def crossover(pair, position)
-    child = Array.new(2,Gene_a.new(Aroma.get.size))
+    child = Array.new(2){Gene_b.new(Aroma.get.size)}
     child[0].chromosome = pair[0].chromosome.take(position) + pair[1].chromosome.drop(position)
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
     child
@@ -70,53 +73,73 @@ class NSGA_II
   end
 
   def next_generation
-
     # N=P_tの大きさ
     # 1.P_t+1...非優越ソートを行い，ランク付けを行った個体，の上位N個体
     # 2.P_t+1の大きさ = N ?
     # 3.P_t+1から混雑度トーナメント選択により 大きさN のQ_t+1を生成
+    #   Q_t+1に対して遺伝的操作を行う?
     # 4.R_t = P_t+1 + Q_t+1
     # 評価し，1に戻る
 
 
-    # Step.2 探索母集団Q_tの評価を行う
+    # Step.2 R_tの評価を行う
     @population.each {|pop| pop.calc_fitness}
 
     # Step.3 アーカイブ集団(=パレート集合?)と探索母集団を組み合わせて R_t = P_t U Q_t を生成する。
-    search_population = @pareto.clone + @population.clone
+    #@population = @pareto.clone + @population.clone
 
-    # R_t に対して非優越ソートを行い、
-    f_non_dominated_sort(search_population)
-    # 全体をフロント毎(ランク毎)に分類する：F_i, i=1, 2, ...
+    # R_t に対して非優越ソートを行い、全体をフロント毎(ランク毎)に分類する：F_i, i=1, 2, ...
+    fast_nondominated_sort(@population)
 
-
-#    search_population.sort_by{|p| p.rank }.each do |s|
-#      p s.rank
-#    end
-
+    # 上位N個体をP_t+1とする．
     # Step 4 新たなアーカイブ母集団 Pt+1 = φ を生成．変数 i = 1 とする．
-    # |Pt+1| + |Fi| < N(=個体数 - d(減少率)) を満たすまで，Pt+1 = Pt+1 ∪ Fi と i = i + 1 を実行．
-    i = 1
-    @pareto = []
-    while @pareto.size < @population.size - @reduction_rate
-      @pareto << search_population.select{|pop| pop.rank == 1}
+    # |Pt+1| + |Fi| > N を満たすまで，Pt+1 = Pt+1 ∪ Fi と i = i + 1 を実行．
+
+    i = 0
+    population_p = []
+    ranked_population = @population.select{|pop| pop.rank == i}
+    while population_p.size + ranked_population.size < @limit_size
+      population_p += ranked_population
       i += 1
+      ranked_population = @population.select{|pop| pop.rank == i}
     end
 
     # Step 5 混雑度ソート (Crowding-sort) を実行し，Fi の中で最も多様性に優れた（混雑距離の大きい）
     # 個体 N − |Pt+1| 個を Pt+1 に加える．
-
-    @pareto += crowding_sort(search_population).take(@reduction_rate)
+    population_p += crowding_sort(ranked_population).take(@population.size - population_p.size)
 
     # Step 6 終了条件を満たしていれば，終了する．
+
     # Step 7 Pt+1 を基に，混雑度トーナメント選択により新たな探索母集団 Qt+1 を生成する．
-    # Step 8 Qt+1 に対して遺伝的操作（交叉，突然変異）を行う．t = t + 1 をとし，Step 2 に戻る．
+    population_q = []
+    pop = crowding_tournament_select(population_p)
 
-    population = selection
+    # Step 8 Qt+1 に対して遺伝的操作（交叉，突然変異）を行う．
+      # 交叉
+    (@population.length/2).times do
+      crossover([pop[rand(@population.length-1)],pop[rand(@population.length-1)]],rand(@population[0].chromosome.length-1)).map do |c|
+        population_q << c
+      end
+    end
 
+      # 突然変異
+    population_q.each do |c|
+      c.chromosome.map!.with_index {|p,idx| rand(0.0..1.0) < 0.05 ? mutate(c,idx) : p}
+    end
 
+      # 致死遺伝子の処理
+    population_q.each do |c|
+      while c.chromosome.inject(&:+) > 3
+        c.chromosome[rand(0..c.chromosome.length)] = 0
+      end
+    end
 
-    population
+    # t = t + 1 をとし，Step 2 に戻る．
+
+    # 4.R_t = P_t+1 + Q_t+1
+    @population = population_p.clone + population_q.clone
+
+    @population
   end
 end
 
