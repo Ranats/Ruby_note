@@ -1,7 +1,7 @@
 require 'matrix'
 
 class Gene
-  attr_accessor :rank, :ruled, :ruling, :chromosome
+  attr_accessor :limit, :rank, :ruled, :ruling, :chromosome, :distance
   attr_reader :fitness
 
   def initialize(length)
@@ -10,6 +10,9 @@ class Gene
     @ruled = 0
     @ruling = 0
     @fitness = Vector[]
+    @distance = 0
+
+    @limit = 12
 
     # 行：自分のグループ   列：比較対象のグループ番号（が含まれるインデックス = 距離）
     @group_tree = [ [[0],[1,6],[2,5],[3,4]],
@@ -30,16 +33,26 @@ class Gene
   end
 
   def calc_fitness(matches,fitness)
+    std_vec = Vector.elements(Array.new(3,@limit/3))
     # group_distance >= 0
-    fitness[0] = get_distance(matches)
+    fitness[0] = get_distance(matches) / (3 * (@limit-1)).to_f
 
     # scentPower_balance  > 0
-    fitness[1] = 1.0 / fitness[1].uniq.size
+#    fitness[1] = 1.0 / fitness[1].uniq.size
+    fitness[1] = std_vec - Vector[fitness[1].count(1),fitness[1].count(2),fitness[1].count(3)]
+    fitness[1] = fitness[1].norm / (std_vec - Vector[0,0,@limit]).norm
 
     # volatile_balance  > 0
-    fitness[2] = 1.0 / fitness[2].uniq.size
+    #fitness[2] = 1.0 / fitness[2].uniq.size
+    fitness[2] = std_vec - Vector[fitness[2].count(1),fitness[2].count(2),fitness[2].count(3)]
+    fitness[2] = fitness[2].norm / (std_vec - Vector[0,0,@limit]).norm
+
+    fitness.map!{|f| f.round(2)}
 
     @fitness = Vector[fitness[0],fitness[1],fitness[2]] #=> minimize
+
+#    puts @fitness
+ #   gets
 =begin
     # group_distance <= 1
     fitness[0] = 1.0 / (fitness[0]+1)
@@ -56,11 +69,10 @@ class Gene
 
   def get_distance(matches)
     tmp_fitness = 0
-    matches.each do |focus|
-      matches.reject{|item| item==focus}.each do |other|
-        tmp_fitness +=
-            @group_tree[focus[:scent_group]].index {|path| path.include?(other[:scent_group])}
-      end
+    focus = matches.first
+    matches.reject{|item| item==focus}.each do |other|
+      tmp_fitness +=
+          @group_tree[focus[:scent_group]].index {|path| path.include?(other[:scent_group])}
     end
     tmp_fitness
   end
@@ -75,6 +87,8 @@ class Gene_a < Gene
       @chromosome << rand(Aroma.get.size)  # 入れる精油の番号
     end
     calc_fitness
+    # 正規化?
+
   end
 
   def calc_fitness
@@ -102,7 +116,7 @@ class Gene_b < Gene
       @chromosome << rand(2)  # 入れる->1, 入れない->0
     end
 
-    while @chromosome.inject(&:+) > 3 do
+    while @chromosome.inject(&:+) > @limit do
       index = rand(length)
       @chromosome[index] = 0
     end

@@ -3,6 +3,12 @@ require 'matrix'  # vectorを使うためのgem
 
 class NSGA_II
 
+  attr_accessor :population
+
+  def clone(args)
+    Marshal.load(Marshal.dump(args))
+  end
+
   def initialize(population)
 
     # Step.1 t=0, 探索母集団P_tを初期化し，アーカイブ母集団Q_tを空にする．
@@ -34,15 +40,51 @@ class NSGA_II
   #    を行う操作
   # つまりランク1をつけたら、それらの個体は除外して次のランクをつける。みたいな？
   def fast_nondominated_sort(population)
+
+    #ruling_population = []
+    #ruled_population = []
+
+    #p population.size
     population.each do |pop|
+    #  ruling_population = population.reject{|item| item==pop}.select{|other| other.fitness[0]>pop.fitness[0] && other.fitness[1]>pop.fitness[1] && other.fitness[2]>pop.fitness[2]}
+    #  ruled_population = population.reject{|item| item==pop}.select{|other| other.fitness[0]<pop.fitness[0] && other.fitness[1]<pop.fitness[1] && other.fitness[2]<pop.fitness[2]}
+
+    #  pop.ruled = ruled_population.size
+
+    #  if pop.ruled == 0
+    #    pop.rank = rank
+    #  end
+
       pop.ruled = population.count{ |other| other.fitness.norm < pop.fitness.norm}
-#      pop.ruling = population.count{ |other|  pop.fitness.norm < other.fitness.norm}
+      pop.ruling = population.count{ |other|  pop.fitness.norm < other.fitness.norm}
     end
 
-    # ruledの配列 をソート したものをuniqした配列でeach
-    population.sort_by{|p| p.ruled}.collect{|p| p.ruled}.uniq.each_with_index  do |r,current_rank|
-      population.map{|pop| pop.rank = current_rank if pop.ruled == r}
+    rank = 0
+
+    ranked_pop = population.select{|pop| pop.ruled==0}
+
+    while ranked_pop.size > 0
+      ranked_pop = population.select{|pop| pop.ruled==0}
+      ranked_pop.each{|pop| pop.rank = rank; pop.ruled -= 1}
+
+      ranked_pop.each do |pop|
+        ruling_population = population.reject{|item| item==pop}.select{|other| pop.fitness.norm < other.fitness.norm}
+        ruling_population.each{|rpop| rpop.ruled -= 1}
+      end
+      rank += 1
     end
+
+
+#    gets
+#    population.each{|pop| pop.ruled -=1}
+
+#    fast_nondominated_sort(population.reject{|item| item.ruled < 0 },rank+1)
+
+
+    # ruledの配列 をソート したものをuniqした配列でeach
+ #   population.sort_by{|p| p.ruled}.collect{|p| p.ruled}.uniq.each_with_index  do |r,current_rank|
+ #     population.map{|pop| pop.rank = current_rank if pop.ruled == r}
+ #   end
 
 #    puts "fitness.norm : ruled_individual : rank"
 #    population.sort_by{|p| p.ruled }.each do |s|
@@ -50,15 +92,57 @@ class NSGA_II
 #    end
   end
 
+  def calc_crowding_distance(population)
+    ret = []
+    (population.min_by{|pop| pop.rank}.rank..population.max_by{|pop| pop.rank}.rank).each do |i|
+      front = population.select{|pop| pop.rank == i}
+
+      front.each do |fr|
+        puts %(#{fr.fitness})
+      end
+      3.times do |f|
+        front.sort_by!{|pop| pop.fitness[f]}
+        f_max = front.max_by{|pop| pop.fitness[f]}.fitness[f]
+        f_min = front.min_by{|pop| pop.fitness[f]}.fitness[f]
+        front.first.distance = Float::INFINITY
+        front.last.distance = Float::INFINITY
+        if f_max == f_min
+          next
+        else
+          (1..front.size-2).each do |idx|
+            puts %(idx:#{idx})
+            puts %(f_max:#{f_max}, f_min:#{f_min})
+            front[idx].distance += (front[idx+1].fitness[f] - front[idx-1].fitness[f]) / (f_max - f_min)
+            puts %(dist:#{(front[idx+1].fitness[f] - front[idx-1].fitness[f]) / (f_max - f_min)})
+
+            puts "distance"
+            puts %(+1: #{front[idx+1].fitness[f]} -1: #{front[idx-1].fitness[f]})
+            puts %(front[idx].distance: #{front[idx].distance})
+#            gets
+          end
+        end
+      end
+
+      ret += front
+
+#      puts "ret"
+#      front.each do |r|
+#        puts %(#{r.distance})
+#      end
+#      gets
+    end
+    return ret
+  end
+
   def crowding_sort(population)
     # ソートされたものを返す
-
-    population
+    population.sort_by{|pop| pop.distance}
   end
 
   def crowding_tournament_select(population)
+    pop = clone(population)
 
-    population
+    pop
   end
 
   def crossover(pair, position)
@@ -85,11 +169,26 @@ class NSGA_II
     # Step.2 R_tの評価を行う
     @population.each {|pop| pop.calc_fitness}
 
+    # 評価値の正規化
+    # 取りうる値の最大値と最小値を用いて
+
     # Step.3 アーカイブ集団(=パレート集合?)と探索母集団を組み合わせて R_t = P_t U Q_t を生成する。
     #@population = @pareto.clone + @population.clone
 
     # R_t に対して非優越ソートを行い、全体をフロント毎(ランク毎)に分類する：F_i, i=1, 2, ...
     fast_nondominated_sort(@population)
+
+    @population.sort_by!{|pop| pop.rank}
+
+    @population.each do |pop|
+      p pop.rank
+    end
+    gets
+
+    # 混雑距離を計算
+    @population = calc_crowding_distance(@population)
+
+
 
     # 上位N個体をP_t+1とする．
     # Step 4 新たなアーカイブ母集団 Pt+1 = φ を生成．変数 i = 1 とする．
@@ -106,13 +205,14 @@ class NSGA_II
 
     # Step 5 混雑度ソート (Crowding-sort) を実行し，Fi の中で最も多様性に優れた（混雑距離の大きい）
     # 個体 N − |Pt+1| 個を Pt+1 に加える．
+      # Step.4であふれたF_i...同一ランク(同一フロント)の個体群に対して用いる．
     population_p += crowding_sort(ranked_population).take(@population.size - population_p.size)
+
 
     # Step 6 終了条件を満たしていれば，終了する．
 
     # Step 7 Pt+1 を基に，混雑度トーナメント選択により新たな探索母集団 Qt+1 を生成する．
     population_q = []
-    pop = crowding_tournament_select(population_p)
 
     # Step 8 Qt+1 に対して遺伝的操作（交叉，突然変異）を行う．
       # 交叉
@@ -129,7 +229,7 @@ class NSGA_II
 
       # 致死遺伝子の処理
     population_q.each do |c|
-      while c.chromosome.inject(&:+) > 3
+      while c.chromosome.inject(&:+) > c.limit
         c.chromosome[rand(0..c.chromosome.length)] = 0
       end
     end
