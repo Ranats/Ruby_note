@@ -3,10 +3,37 @@ require './Get_aroma'
 require './Aroma'
 require './NSGA'
 require './Gene'
+require 'gnuplot'
 
 module Settings
   module_function
   def individual_size; 100 end
+end
+
+
+def plot_pareto(pareto)
+  Gnuplot.open do |gp|
+    Gnuplot::SPlot.new(gp) do |plot|
+      plot.title ""
+
+      plot.ylabel 'f_1'
+      plot.xlabel 'f_2'
+      plot.zlabel 'f_3'
+      plot.terminal 'pngcairo size 1280,1280'
+      plot.output "#{Time.now}.png"
+      plot.xrange '[0:1]'
+      plot.yrange '[0:1]'
+
+      score = [pareto.collect{|gene| gene.fitness[0]}, pareto.collect{|gene| gene.fitness[1]}, pareto.collect{|gene| gene.fitness[2]}]
+      plot.data << Gnuplot::DataSet.new( [score[0],score[1],score[2]] ) do |ds|
+        ds.with = "points pt 7"
+        ds.notitle
+#        ds.linewidth = 2
+      end
+
+#      plot.set "linesyle 1 linecolor rgbcolor 'orange' linetype 1"
+    end
+  end
 end
 
 if __FILE__ == $0
@@ -44,5 +71,7 @@ if __FILE__ == $0
   agent = NSGA_II.new(population)
 
   agent.next_generation
+
+  plot_pareto(agent.population)
 
 end
