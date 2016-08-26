@@ -214,6 +214,14 @@ class NSGA_II
     # Step 7 Pt+1 を基に，混雑度トーナメント選択により新たな探索母集団 Qt+1 を生成する．
     population_q = []
 
+    pop = crowding_tournament_select(population_p)
+
+
+
+
+
+
+
     # Step 8 Qt+1 に対して遺伝的操作（交叉，突然変異）を行う．
       # 交叉
     (@population.length/2).times do

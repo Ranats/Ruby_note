@@ -35,7 +35,9 @@ class Gene
   def calc_fitness(matches,fitness)
     std_vec = Vector.elements(Array.new(3,@limit/3))
     # group_distance >= 0
-    fitness[0] = get_distance(matches) / (3 * (@limit-1)).to_f
+    fitness[0] = get_distance(matches) / (29)
+
+    p fitness[0]
 
     # scentPower_balance  > 0
 #    fitness[1] = 1.0 / fitness[1].uniq.size
@@ -68,13 +70,21 @@ class Gene
   end
 
   def get_distance(matches)
-    tmp_fitness = 0
-    focus = matches.first
-    matches.reject{|item| item==focus}.each do |other|
-      tmp_fitness +=
-          @group_tree[focus[:scent_group]].index {|path| path.include?(other[:scent_group])}
+    ret_fitness = 0.0
+#    focus = matches.first
+    matches.each do |focus|
+      tmp_fitness = []
+      matches.reject{|item| item==focus}.each do |other|
+        tmp_fitness <<
+            @group_tree[focus[:scent_group]].index {|path| path.include?(other[:scent_group])}
+      end
+#      p tmp_fitness
+#      p tmp_fitness.inject(&:+)
+      ret_fitness += tmp_fitness.inject(&:+)
     end
-    tmp_fitness
+#    puts %(length:#{matches.length}, dist:#{ret_fitness})
+#    gets
+    ret_fitness / matches.length.to_f
   end
 end
 
