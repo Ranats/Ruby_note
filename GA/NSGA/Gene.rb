@@ -86,6 +86,10 @@ class Gene
 #    gets
     ret_fitness / matches.length.to_f
   end
+
+  def mutate(idx)
+    @chromosome[idx] == 1 ? 0 : 1
+  end
 end
 
 #遺伝子
