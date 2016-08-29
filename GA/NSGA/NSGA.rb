@@ -151,11 +151,7 @@ class NSGA_II
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
     child
   end
-
-  def mutate(individual,position)
-    individual.chromosome[position] == 1 ? 0 : 1
-  end
-
+  
   def next_generation
     # N=P_tの大きさ
     # 1.P_t+1...非優越ソートを行い，ランク付けを行った個体，の上位N個体
@@ -214,6 +210,14 @@ class NSGA_II
     # Step 7 Pt+1 を基に，混雑度トーナメント選択により新たな探索母集団 Qt+1 を生成する．
     population_q = []
 
+    pop = crowding_tournament_select(population_p)
+
+
+
+
+
+
+
     # Step 8 Qt+1 に対して遺伝的操作（交叉，突然変異）を行う．
       # 交叉
     (@population.length/2).times do
@@ -224,7 +228,7 @@ class NSGA_II
 
       # 突然変異
     population_q.each do |c|
-      c.chromosome.map!.with_index {|p,idx| rand(0.0..1.0) < 0.05 ? mutate(c,idx) : p}
+      c.chromosome.map!.with_index {|p,idx| rand(0.0..1.0) < 0.05 ? c.mutate(idx) : p}
     end
 
       # 致死遺伝子の処理
