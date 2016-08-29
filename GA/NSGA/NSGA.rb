@@ -162,6 +162,12 @@ class NSGA_II
     # 4.R_t = P_t+1 + Q_t+1
     # 評価し，1に戻る
 
+    # http://www.anlp.jp/proceedings/annual_meeting/2014/pdf_dir/P6-10.pdf
+    # 交叉
+    #   一点交叉を用い，交叉前と交叉後で"1"の数が異なる場合，調整を行う
+    # 突然変異
+    #   0と1が隣り合う箇所を探し，それらの場所を入れ替える．
+
 
     # Step.2 R_tの評価を行う
     @population.each {|pop| pop.calc_fitness}
