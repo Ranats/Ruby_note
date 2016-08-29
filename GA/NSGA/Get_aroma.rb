@@ -12,6 +12,9 @@ module Scanner
       end
 
       # 効能のリクエストを含むものなら配列に追加
+        # request       :[1,2,3]
+        # hash[:effect] :[0,2,5,9]
+        # request - hash[:effect] => [1,3] # 2が減算される
       aromas << hash if (request - hash[:effect]).size != request.size
     end
     aromas
