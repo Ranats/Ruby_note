@@ -4,7 +4,7 @@ class Gene
   attr_accessor :limit, :rank, :ruled, :ruling, :chromosome, :distance
   attr_reader :fitness
 
-  def initialize(length)
+  def initialize
     @chromosome = []
     @rank = 1
     @ruled = 0
@@ -22,6 +22,10 @@ class Gene
                    [[4],[3,5],[2,6],[0,1]],
                    [[5],[4,6],[0,3],[1,2]],
                    [[6],[0,5],[1,4],[2,3]] ]
+  end
+
+  def new_blank
+    self.initialize
   end
 
   def get_fitness(index=nil)
@@ -96,7 +100,7 @@ end
 #  大きさ : 目的とする効能(=request)の数
 class Gene_a < Gene
   def initialize(length)
-    super
+    super()
     length.times do
       @chromosome << rand(Aroma.get.size)  # 入れる精油の番号
     end
@@ -124,8 +128,8 @@ end
 #   配列   => [0,1,1,0,0,...]
 #             index = 精油ID 入れる:1  / 入れない:0
 class Gene_b < Gene
-  def initialize(length)
-    super
+  def initialize(length,request)
+    super()
     length.times do
       @chromosome << rand(2)  # 入れる->1, 入れない->0
     end
@@ -134,6 +138,17 @@ class Gene_b < Gene
       index = rand(length)
       @chromosome[index] = 0
     end
+
+    @chromosome.each_with_index do |bit,idx|
+      if bit == 1
+        p Aroma.get[idx][:effect]
+        request -= Aroma.get[idx][:effect]
+      end
+    end
+    unless request.empty?
+      initialize(length,request)
+    end
+
 
     calc_fitness
   end

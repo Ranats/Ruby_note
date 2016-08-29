@@ -9,7 +9,7 @@ class NSGA_II
     Marshal.load(Marshal.dump(args))
   end
 
-  def initialize(population)
+  def initialize(population,request)
 
     # Step.1 t=0, 探索母集団P_tを初期化し，アーカイブ母集団Q_tを空にする．
     @population = population
@@ -22,6 +22,7 @@ class NSGA_II
     # 減少率
     @reduction_rate = population.size / 10
 
+    @request = request
   end
 
   # 高速非優越ソート ... ランク付け
@@ -146,12 +147,12 @@ class NSGA_II
   end
 
   def crossover(pair, position)
-    child = Array.new(2){Gene_b.new(Aroma.get.size)}
+    child = Array.new(2){Gene_b.new_blank}
     child[0].chromosome = pair[0].chromosome.take(position) + pair[1].chromosome.drop(position)
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
     child
   end
-  
+
   def next_generation
     # N=P_tの大きさ
     # 1.P_t+1...非優越ソートを行い，ランク付けを行った個体，の上位N個体
@@ -236,7 +237,18 @@ class NSGA_II
       while c.chromosome.inject(&:+) > c.limit
         c.chromosome[rand(0..c.chromosome.length)] = 0
       end
+      req = clone(@request)
+      c.chromosome.each_with_index do |bit,idx|
+        if bit == 1
+          req -= Aroma.get[idx][:effect]
+        end
+      end
+      unless req.empty?
+        c.fitness = nil
+      end
     end
+
+    population_q.reject!{|pop| pop.fitness.nil?}
 
     # t = t + 1 をとし，Step 2 に戻る．
 
@@ -246,5 +258,3 @@ class NSGA_II
     @population
   end
 end
-
-

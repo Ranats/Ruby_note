@@ -51,13 +51,13 @@ if __FILE__ == $0
 
     break if (request = gets.chomp.split(' ').map(&:to_i)).size.between?(1,3)
     puts "1つ以上3つまで！！！！！\n\n"
-    sleep 1
+    sleep 0.5
   end
 
   Aroma.create(request)
 
   # 精油の数を遺伝子長として初期化 => [0,0,1,1,0,0,...]
-  population = Array.new(Settings.individual_size) { Gene_b.new(Aroma.get.size) }
+  population = Array.new(Settings.individual_size) { Gene_b.new(Aroma.get.size,request) }
 
   # B
   # requestサイズで遺伝子を初期化　=> [0, 15, 3] , [1, 9, 3] , ...
@@ -68,7 +68,7 @@ if __FILE__ == $0
 #  population.map{|pop| p pop.fitness; }#pop.chromosome.each_with_index do |bit,i| p Aroma.get[i][:name] end}
 
   # Step.1 t=0, 探索母集団Qtを初期化し、アーカイブ母集団Ptを空にする
-  agent = NSGA_II.new(population)
+  agent = NSGA_II.new(population,request)
 
   agent.next_generation
 
