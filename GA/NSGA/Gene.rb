@@ -92,7 +92,9 @@ class Gene
   end
 
   def mutate(idx)
-    @chromosome[idx] == 1 ? 0 : 1
+    idxs = @chromosome.map.with_index{|e,i| e == 1^@chromosome[idx] ? i : nil}.compact
+    @chromosome[idxs[rand(idxs.length)]] = @chromosome[idx]
+    @chromosme[idx] = 1^@chromosome[idx]
   end
 end
 

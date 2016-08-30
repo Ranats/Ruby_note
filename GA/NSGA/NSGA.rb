@@ -152,6 +152,20 @@ class NSGA_II
     child = Array.new(2){Gene_b.new_blank}
     child[0].chromosome = pair[0].chromosome.take(position) + pair[1].chromosome.drop(position)
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
+
+    # 交叉後の交叉位置以降の1の数　- 交叉前の交叉位置以降の1の数\
+    #   調整する対象のビットを指定 1/0
+    #   調整するビットのインデックス配列を生成
+    #   その中からランダムに選び，そのインデックスのビットを反転する．
+    2.times do |id|
+      gap = child[id].chromosome.drop(position).inject(:+) - pair[id].chromosome.drop(position).inject(:+)
+      target_bit = (gap > 0) ? 1 : 0
+      (gap.abs).times do |i|
+        idxs = child[id].map.with_index{|e,i| e == target_bit ? i : nil}.compact
+        child[id].chromosome[idxs[rand(idxs.length)]] = 1^target_bit
+      end
+    end
+
     child
   end
 
@@ -233,7 +247,7 @@ class NSGA_II
 
       # 突然変異
     population_q.each do |c|
-      c.chromosome.map!.with_index {|p,idx| rand(0.0..1.0) < 0.05 ? c.mutate(idx) : p}
+      c.chromosome.map.with_index {|p,idx| rand(0.0..1.0) < 0.05 ? c.mutate(idx) : p}
     end
 
       # 致死遺伝子の処理
