@@ -141,9 +141,11 @@ class NSGA_II
   end
 
   def crowding_tournament_select(population)
-    pop = clone(population)
-
-    pop
+    # トーナメントサイズ2: 2個体をランダムに選び，以下の2点の選択基準により選択．
+    #   母集団における非優越ランク : 個体iのランクの方が個体jのランクよりも優れている
+    #   母集団内の局所的混雑距離  : 個体iと個体jはともに同じランクであり，iの混雑距離がjよりも優れている．
+    pop = [clone(population[rand(population.length)]),clone(population[rand(population.length)])]
+    pop[0].rank == pop[1].rank ? (pop[0].distance > pop[1].distance ? pop[0] : pop[1]) : pop[0].rank > pop[1].rank ? pop[1] : pop[0]
   end
 
   def crossover(pair, position)
@@ -217,18 +219,14 @@ class NSGA_II
     # Step 7 Pt+1 を基に，混雑度トーナメント選択により新たな探索母集団 Qt+1 を生成する．
     population_q = []
 
-    pop = crowding_tournament_select(population_p)
-
-
-
-
-
-
+    @limit_size.times do
+      population_q << crowding_tournament_select(population_p)
+    end
 
     # Step 8 Qt+1 に対して遺伝的操作（交叉，突然変異）を行う．
       # 交叉
-    (@population.length/2).times do
-      crossover([pop[rand(@population.length-1)],pop[rand(@population.length-1)]],rand(@population[0].chromosome.length-1)).map do |c|
+    (population_q.size/2).times do
+      crossover([population_q[rand(population_q.length-1)],population_q[rand(population_q.length-1)]],rand(@population[0].chromosome.length-1)).map do |c|
         population_q << c
       end
     end
