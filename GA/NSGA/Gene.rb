@@ -1,8 +1,7 @@
 require 'matrix'
 
 class Gene
-  attr_accessor :limit, :rank, :ruled, :ruling, :chromosome, :distance
-  attr_reader :fitness
+  attr_accessor :limit, :rank, :ruled, :ruling, :chromosome, :distance, :fitness
 
   def initialize
     @chromosome = []
@@ -24,10 +23,6 @@ class Gene
                    [[6],[0,5],[1,4],[2,3]] ]
   end
 
-  def new_blank
-    self.initialize
-  end
-
   def get_fitness(index=nil)
     if index.nil?
       @fitness
@@ -40,8 +35,6 @@ class Gene
     std_vec = Vector.elements(Array.new(3,@limit/3))
     # group_distance >= 0
     fitness[0] = get_distance(matches) / (29)
-
-    p fitness[0]
 
     # scentPower_balance  > 0
 #    fitness[1] = 1.0 / fitness[1].uniq.size
@@ -77,7 +70,7 @@ class Gene
     ret_fitness = 0.0
 #    focus = matches.first
     matches.each do |focus|
-      tmp_fitness = []
+      tmp_fitness = [0]
       matches.reject{|item| item==focus}.each do |other|
         tmp_fitness <<
             @group_tree[focus[:scent_group]].index {|path| path.include?(other[:scent_group])}
@@ -93,8 +86,10 @@ class Gene
 
   def mutate(idx)
     idxs = @chromosome.map.with_index{|e,i| e == 1^@chromosome[idx] ? i : nil}.compact
-    @chromosome[idxs[rand(idxs.length)]] = @chromosome[idx]
-    @chromosme[idx] = 1^@chromosome[idx]
+    if idxs.length > 0
+      @chromosome[idxs[rand(idxs.length)]] = @chromosome[idx]
+      @chromosme[idx] = 1^@chromosome[idx]
+    end
   end
 end
 
@@ -143,7 +138,7 @@ class Gene_b < Gene
 
     @chromosome.each_with_index do |bit,idx|
       if bit == 1
-        p Aroma.get[idx][:effect]
+#        p Aroma.get[idx][:effect]
         request -= Aroma.get[idx][:effect]
       end
     end
@@ -153,6 +148,26 @@ class Gene_b < Gene
 
 
     calc_fitness
+  end
+
+  def new_blank
+    @chromosome = []
+    @rank = 1
+    @ruled = 0
+    @ruling = 0
+    @fitness = Vector[]
+    @distance = 0
+
+    @limit = 12
+
+    # 行：自分のグループ   列：比較対象のグループ番号（が含まれるインデックス = 距離）
+    @group_tree = [ [[0],[1,6],[2,5],[3,4]],
+                    [[1],[0,2],[3,6],[4,5]],
+                    [[2],[1,3],[0,4],[5,6]],
+                    [[3],[2,4],[1,5],[0,6]],
+                    [[4],[3,5],[2,6],[0,1]],
+                    [[5],[4,6],[0,3],[1,2]],
+                    [[6],[0,5],[1,4],[2,3]] ]
   end
 
   def calc_fitness

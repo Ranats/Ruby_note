@@ -70,8 +70,12 @@ if __FILE__ == $0
   # Step.1 t=0, 探索母集団Qtを初期化し、アーカイブ母集団Ptを空にする
   agent = NSGA_II.new(population,request)
 
-  agent.next_generation
+  10000.times do |i|
+    agent.next_generation
 
-  plot_pareto(agent.population)
+    if i % 50
+      plot_pareto(agent.population)
+    end
+  end
 
 end

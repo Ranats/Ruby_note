@@ -98,9 +98,9 @@ class NSGA_II
     (population.min_by{|pop| pop.rank}.rank..population.max_by{|pop| pop.rank}.rank).each do |i|
       front = population.select{|pop| pop.rank == i}
 
-      front.each do |fr|
-        puts %(#{fr.fitness})
-      end
+#      front.each do |fr|
+#        puts %(#{fr.fitness})
+#      end
       3.times do |f|
         front.sort_by!{|pop| pop.fitness[f]}
         f_max = front.max_by{|pop| pop.fitness[f]}.fitness[f]
@@ -111,14 +111,14 @@ class NSGA_II
           next
         else
           (1..front.size-2).each do |idx|
-            puts %(idx:#{idx})
-            puts %(f_max:#{f_max}, f_min:#{f_min})
+#            puts %(idx:#{idx})
+#            puts %(f_max:#{f_max}, f_min:#{f_min})
             front[idx].distance += (front[idx+1].fitness[f] - front[idx-1].fitness[f]) / (f_max - f_min)
-            puts %(dist:#{(front[idx+1].fitness[f] - front[idx-1].fitness[f]) / (f_max - f_min)})
+#            puts %(dist:#{(front[idx+1].fitness[f] - front[idx-1].fitness[f]) / (f_max - f_min)})
 
-            puts "distance"
-            puts %(+1: #{front[idx+1].fitness[f]} -1: #{front[idx-1].fitness[f]})
-            puts %(front[idx].distance: #{front[idx].distance})
+#            puts "distance"
+#            puts %(+1: #{front[idx+1].fitness[f]} -1: #{front[idx-1].fitness[f]})
+#            puts %(front[idx].distance: #{front[idx].distance})
 #            gets
           end
         end
@@ -149,7 +149,7 @@ class NSGA_II
   end
 
   def crossover(pair, position)
-    child = Array.new(2){Gene_b.new_blank}
+    child = clone(pair)
     child[0].chromosome = pair[0].chromosome.take(position) + pair[1].chromosome.drop(position)
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
 
@@ -161,7 +161,7 @@ class NSGA_II
       gap = child[id].chromosome.drop(position).inject(:+) - pair[id].chromosome.drop(position).inject(:+)
       target_bit = (gap > 0) ? 1 : 0
       (gap.abs).times do |i|
-        idxs = child[id].map.with_index{|e,i| e == target_bit ? i : nil}.compact
+        idxs = child[id].chromosome.map.with_index{|e,i| e == target_bit ? i : nil}.compact
         child[id].chromosome[idxs[rand(idxs.length)]] = 1^target_bit
       end
     end
@@ -199,10 +199,6 @@ class NSGA_II
 
     @population.sort_by!{|pop| pop.rank}
 
-    @population.each do |pop|
-      p pop.rank
-    end
-    gets
 
     # 混雑距離を計算
     @population = calc_crowding_distance(@population)
