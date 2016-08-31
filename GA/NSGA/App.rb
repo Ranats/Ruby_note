@@ -20,7 +20,7 @@ def plot_pareto(pareto)
       plot.xlabel 'f_2'
       plot.zlabel 'f_3'
       plot.terminal 'pngcairo size 1280,1280'
-      plot.output "#{Time.now}.png"
+      plot.output "~/graph/#{Time.now}.png"
       plot.xrange '[0:1]'
       plot.yrange '[0:1]'
 
@@ -32,6 +32,45 @@ def plot_pareto(pareto)
       end
 
 #      plot.set "linesyle 1 linecolor rgbcolor 'orange' linetype 1"
+    end
+  end
+end
+
+$score = []
+$gen = []
+
+def plot_transitive(population,generation)
+  Gnuplot.open do |gp|
+    Gnuplot::Plot.new(gp) do |plot|
+      plot.title "上位10個体の評価値の推移"
+      plot.ylabel "f_norm"
+      plot.xlabel "generation"
+      plot.terminal "pngcairo size 1280,1280"
+      plot.output "~/graph/#{Time.now}.png"
+      plot.yrange '[0:1]'
+      plot.xrange '[0:'+generation.to_s+']'
+
+      vec = 0
+      population.each do |pop|
+        vec += pop.fitness.norm
+      end
+
+#      puts %(vec_norm:#{vec})
+
+      vec /= population.length
+
+#      puts %(vec:#{vec})
+
+      $gen << generation
+
+      $score << vec
+
+      plot.data << Gnuplot::DataSet.new([$gen,$score]) do |ds|
+        ds.with = "lines"
+        ds.linewidth = 2
+      end
+
+
     end
   end
 end
@@ -74,7 +113,9 @@ if __FILE__ == $0
     agent.next_generation
 
     if i % 50
-      plot_pareto(agent.population)
+#      plot_pareto(agent.population)
+
+      plot_transitive(agent.population.take(10),agent.generation)
     end
   end
 

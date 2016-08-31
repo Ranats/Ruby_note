@@ -3,7 +3,7 @@ require 'matrix'  # vectorを使うためのgem
 
 class NSGA_II
 
-  attr_accessor :population
+  attr_accessor :population, :generation
 
   def clone(args)
     Marshal.load(Marshal.dump(args))
@@ -153,19 +153,27 @@ class NSGA_II
     child[0].chromosome = pair[0].chromosome.take(position) + pair[1].chromosome.drop(position)
     child[1].chromosome = pair[1].chromosome.take(position) + pair[0].chromosome.drop(position)
 
-    # 交叉後の交叉位置以降の1の数　- 交叉前の交叉位置以降の1の数\
-    #   調整する対象のビットを指定 1/0
-    #   調整するビットのインデックス配列を生成
-    #   その中からランダムに選び，そのインデックスのビットを反転する．
+    # リミットを超えた場合に調整
     2.times do |id|
-      gap = child[id].chromosome.drop(position).inject(:+) - pair[id].chromosome.drop(position).inject(:+)
-      target_bit = (gap > 0) ? 1 : 0
-      (gap.abs).times do |i|
-        idxs = child[id].chromosome.map.with_index{|e,i| e == target_bit ? i : nil}.compact
-        child[id].chromosome[idxs[rand(idxs.length)]] = 1^target_bit
+      gap = child[id].limit - child[id].chromosome.inject(&:+)#child[id].chromosome.drop(position).inject(:+) - pair[id].chromosome.drop(position).inject(:+)
+      if gap < 0
+        (gap.abs).times do |i|
+          # ビットが1のインデックス
+          idxs = child[id].chromosome.map.with_index{|e,i| e == 1 ? i : nil}.compact.reject{|i| i < position}
+          child[id].chromosome[idxs[rand(idxs.length-1)]] = 0
+        end
       end
-    end
 
+      # 交叉後の交叉位置以降の1の数　- 交叉前の交叉位置以降の1の数\
+      #   調整する対象のビットを指定 1/0
+      #   調整するビットのインデックス配列を生成
+      #   その中からランダムに選び，そのインデックスのビットを反転する．
+#      target_bit = (gap > 0) ? 1 : 0
+#      (gap.abs).times do |i|
+#        idxs = child[id].chromosome.map.with_index{|e,i| e == target_bit ? i : nil}.compact
+#        child[id].chromosome[idxs[rand(idxs.length)]] = 1^target_bit
+#      end
+    end
     child
   end
 
@@ -185,19 +193,6 @@ class NSGA_II
     #   0と1が隣り合う箇所を探し，それらの場所を入れ替える．
 
 
-    # Step.2 R_tの評価を行う
-    @population.each {|pop| pop.calc_fitness}
-
-    # 評価値の正規化
-    # 取りうる値の最大値と最小値を用いて
-
-    # Step.3 アーカイブ集団(=パレート集合?)と探索母集団を組み合わせて R_t = P_t U Q_t を生成する。
-    #@population = @pareto.clone + @population.clone
-
-    # R_t に対して非優越ソートを行い、全体をフロント毎(ランク毎)に分類する：F_i, i=1, 2, ...
-    fast_nondominated_sort(@population)
-
-    @population.sort_by!{|pop| pop.rank}
 
 
     # 混雑距離を計算
@@ -212,17 +207,24 @@ class NSGA_II
     i = 0
     population_p = []
     ranked_population = @population.select{|pop| pop.rank == i}
+
+#    puts "ranked_population"
+#    p ranked_population.length
+
+#    puts ""
+
     while population_p.size + ranked_population.size < @limit_size
       population_p += ranked_population
       i += 1
       ranked_population = @population.select{|pop| pop.rank == i}
     end
 
+#    puts %(pop_p:#{population_p.length})
+
     # Step 5 混雑度ソート (Crowding-sort) を実行し，Fi の中で最も多様性に優れた（混雑距離の大きい）
     # 個体 N − |Pt+1| 個を Pt+1 に加える．
       # Step.4であふれたF_i...同一ランク(同一フロント)の個体群に対して用いる．
-    population_p += crowding_sort(ranked_population).take(@population.size - population_p.size)
-
+    population_p += crowding_sort(ranked_population).take(@limit_size - population_p.size)
 
     # Step 6 終了条件を満たしていれば，終了する．
 
@@ -247,19 +249,32 @@ class NSGA_II
     end
 
       # 致死遺伝子の処理
+      #   交叉，突然変異の部分で調整(操作前後での1,0の数を同じにしている．)
+      #   → ...の制約を満たす個体を生成するため．
+      #     (制約を満たす親個体の組み合わせと，子個体のそれが類似していれば，その子個体も制約を満たすという仮定(?))
+    #  1の総数がリミットを超えなければ良いのでは
+    #  　&目的の効能をすべて満たしているか
+    req = clone(@request)
+
     population_q.each do |c|
       while c.chromosome.inject(&:+) > c.limit
         c.chromosome[rand(0..c.chromosome.length)] = 0
       end
-      req = clone(@request)
+      effects = []
       c.chromosome.each_with_index do |bit,idx|
         if bit == 1
-          req -= Aroma.get[idx][:effect]
+          effects += Aroma.get[idx][:effect]
         end
       end
-      unless req.empty?
+
+      if (req - effects).length > 0
         c.fitness = nil
       end
+
+#      gets
+#      unless req.empty?
+#        c.fitness = nil
+#      end
     end
 
     population_q.reject!{|pop| pop.fitness.nil?}
@@ -268,6 +283,25 @@ class NSGA_II
 
     # 4.R_t = P_t+1 + Q_t+1
     @population = population_p.clone + population_q.clone
+
+    @generation += 1
+
+    # Step.2 R_tの評価を行う
+    @population.each {|pop| pop.calc_fitness}
+
+    # 評価値の正規化
+    # 取りうる値の最大値と最小値を用いて
+
+    # Step.3 アーカイブ集団(=パレート集合?)と探索母集団を組み合わせて R_t = P_t U Q_t を生成する。
+    #@population = @pareto.clone + @population.clone
+
+    # R_t に対して非優越ソートを行い、全体をフロント毎(ランク毎)に分類する：F_i, i=1, 2, ...
+    fast_nondominated_sort(@population)
+
+    @population.sort_by!{|pop| pop.rank}
+
+
+#    gets
 
     @population
   end
