@@ -38,8 +38,9 @@ end
 
 $score = []
 $gen = []
+$elite = []
 
-def plot_transitive(population,generation)
+def plot_transitive
   Gnuplot.open do |gp|
     Gnuplot::Plot.new(gp) do |plot|
       plot.title "上位10個体の評価値の推移"
@@ -47,28 +48,21 @@ def plot_transitive(population,generation)
       plot.xlabel "generation"
       plot.terminal "pngcairo size 1280,1280"
       plot.output "~/graph/#{Time.now}.png"
-      plot.yrange '[0:1]'
-      plot.xrange '[0:'+generation.to_s+']'
-
-      vec = 0
-      population.each do |pop|
-        vec += pop.fitness.norm
-      end
-
-#      puts %(vec_norm:#{vec})
-
-      vec /= population.length
-
-#      puts %(vec:#{vec})
-
-      $gen << generation
-
-      $score << vec
+      plot.yrange '[0:0.5]'
+      plot.xrange '[0:'+$gen.length.to_s+']'
 
       plot.data << Gnuplot::DataSet.new([$gen,$score]) do |ds|
         ds.with = "lines"
         ds.linewidth = 2
+        ds.title = 'top 10 avg'
       end
+
+      plot.data << Gnuplot::DataSet.new([$gen,$elite]) do |ds|
+        ds.with = "lines"
+        ds.linewidth = 2
+        ds.title = 'elite'
+      end
+
 
 
     end
@@ -109,13 +103,28 @@ if __FILE__ == $0
   # Step.1 t=0, 探索母集団Qtを初期化し、アーカイブ母集団Ptを空にする
   agent = NSGA_II.new(population,request)
 
+  n = 10
+
   10000.times do |i|
     agent.next_generation
 
-    if i % 50
+    vec = 0
+    agent.population.take(n).each do |pop|
+      vec += pop.fitness.norm
+    end
+
+    vec /= n
+
+    $gen << agent.generation
+
+    $score << 1 / vec / 10
+
+    $elite << 1 / agent.population.first.fitness.norm / 10
+
+    if i % 100
 #      plot_pareto(agent.population)
 
-      plot_transitive(agent.population.take(10),agent.generation)
+      plot_transitive
     end
   end
 
