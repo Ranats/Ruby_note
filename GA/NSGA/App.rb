@@ -37,8 +37,10 @@ def plot_pareto(pareto)
 end
 
 $score = []
-$gen = []
+$gen = 0
 $elite = []
+
+$first_set = []
 
 def plot_transitive
   Gnuplot.open do |gp|
@@ -49,7 +51,7 @@ def plot_transitive
       plot.terminal "pngcairo size 1280,1280"
       plot.output "~/graph/#{Time.now}.png"
       plot.yrange '[0:0.5]'
-      plot.xrange '[0:'+$gen.length.to_s+']'
+      plot.xrange '[0:'+$gen.to_s+']'
 
       plot.data << Gnuplot::DataSet.new([$gen,$score]) do |ds|
         ds.with = "lines"
@@ -63,10 +65,106 @@ def plot_transitive
         ds.title = 'elite'
       end
 
+    end
+  end
+end
 
+def plot(first_population,population)
+  label = ["f_1","f_2","f_3"]
+
+  Gnuplot.open do |gp|
+    Gnuplot::Plot.new(gp) do |plot|
+      plot.title ""
+      plot.ylabel "f_1"
+      plot.xlabel "f_2"
+      plot.terminal "pngcairo size 1280,1280"
+      plot.output "~/graph/f1-f2/f_1-f_2-#{$gen}.png"
+      plot.yrange '[0:1]'
+      plot.xrange '[0:1]'
+
+      x = first_population.map{|pop| pop[0]}
+      y = first_population.map{|pop| pop[1]}
+
+        plot.data << Gnuplot::DataSet.new([x,y]) do |ds|
+          ds.with = "points pt 7 ps 2"
+          ds.linecolor = "rgb 'red' linetype 5"
+          ds.title = 'first populations'
+        end
+
+      x = population.map{|pop| pop[0]}
+      y = population.map{|pop| pop[1]}
+
+      plot.data << Gnuplot::DataSet.new([x,y]) do |ds|
+        ds.with = "points pt 7 ps 2"
+        ds.linecolor = "rgb 'blue' linetype 5"
+        ds.title = 'current populations'
+      end
 
     end
   end
+
+  Gnuplot.open do |gp|
+    Gnuplot::Plot.new(gp) do |plot|
+      plot.title ""
+      plot.ylabel "f_1"
+      plot.xlabel "f_3"
+      plot.terminal "pngcairo size 1280,1280"
+      plot.output "~/graph/f1-f3/f_1-f_3-#{$gen}.png"
+      plot.yrange '[0:1]'
+      plot.xrange '[0:1]'
+
+      x = first_population.map{|pop| pop[0]}
+      y = first_population.map{|pop| pop[2]}
+
+        plot.data << Gnuplot::DataSet.new([x,y]) do |ds|
+          ds.with = "points pt 7 ps 2"
+          ds.linecolor = "rgb 'red' linetype 5"
+          ds.title = 'first populations'
+        end
+
+      x = population.map{|pop| pop[0]}
+      y = population.map{|pop| pop[2]}
+
+      plot.data << Gnuplot::DataSet.new([x,y]) do |ds|
+        ds.with = "points pt 7 ps 2"
+        ds.linecolor = "rgb 'blue' linetype 5"
+        ds.title = 'current populations'
+      end
+
+    end
+  end
+
+  Gnuplot.open do |gp|
+    Gnuplot::Plot.new(gp) do |plot|
+      plot.title ""
+      plot.ylabel "f_2"
+      plot.xlabel "f_3"
+      plot.terminal "pngcairo size 1280,1280"
+      plot.output "~/graph/f2-f3/f_2-f_3-#{$gen}.png"
+      plot.yrange '[0:1]'
+      plot.xrange '[0:1]'
+
+      x = first_population.map{|pop| pop[1]}
+      y = first_population.map{|pop| pop[2]}
+
+        plot.data << Gnuplot::DataSet.new([x,y]) do |ds|
+          ds.with = "points pt 7 ps 2"
+          ds.linecolor = "rgb 'red' linetype 5"
+          ds.title = 'first populations'
+        end
+
+      x = population.map{|pop| pop[1]}
+      y = population.map{|pop| pop[2]}
+
+      plot.data << Gnuplot::DataSet.new([x,y]) do |ds|
+        ds.with = "points pt 7 ps 2"
+        ds.linecolor = "rgb 'blue' linetype 5"
+        ds.title = 'current populations'
+      end
+
+    end
+  end
+
 end
 
 if __FILE__ == $0
@@ -103,28 +201,34 @@ if __FILE__ == $0
   # Step.1 t=0, 探索母集団Qtを初期化し、アーカイブ母集団Ptを空にする
   agent = NSGA_II.new(population,request)
 
-  n = 10
+  agent.next_generation
+
+  first_set = []
+
+  n = 20
+
+  agent.population.take(n).each do |pop|
+    first_set << pop.fitness
+  end
 
   10000.times do |i|
     agent.next_generation
 
-    vec = 0
-    agent.population.take(n).each do |pop|
-      vec += pop.fitness.norm
-    end
+    $gen = agent.generation
 
-    vec /= n
+#    $score << 1 / vec / 10
 
-    $gen << agent.generation
+#    $elite << 1 / agent.population.first.fitness.norm / 10
 
-    $score << 1 / vec / 10
-
-    $elite << 1 / agent.population.first.fitness.norm / 10
-
-    if i % 100
+    if i % 1000
 #      plot_pareto(agent.population)
 
-      plot_transitive
+      vec = []
+      agent.population.take(n).each do |pop|
+        vec << pop.fitness
+      end
+
+      plot(first_set,vec)
     end
   end
 

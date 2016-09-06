@@ -91,6 +91,8 @@ class Gene
       @chromosme[idx] = 1^@chromosome[idx]
     end
   end
+
+
 end
 
 #遺伝子
