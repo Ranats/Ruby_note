@@ -1,8 +1,9 @@
 require './Aroma' # DB
 require 'matrix'  # vectorを使うためのgem
+require 'pushbullet'
+require 'dotenv'
 
 class NSGA_II
-
   attr_accessor :population, :generation
 
   def clone(args)
@@ -10,6 +11,9 @@ class NSGA_II
   end
 
   def initialize(population,request)
+
+    Dotenv.load('.env')
+    Pushbullet.api_token = ENV["API_TOKEN"]
 
     # Step.1 t=0, 探索母集団P_tを初期化し，アーカイブ母集団Q_tを空にする．
     @population = population
@@ -40,12 +44,20 @@ class NSGA_II
   #    体にランクが与えられるまで繰り返すことで，順位付け
   #    を行う操作
   # つまりランク1をつけたら、それらの個体は除外して次のランクをつける。みたいな？
-  def fast_nondominated_sort(population)
+
+  require 'benchmark'
+
+  def fast_nondominated_sort(arg_population)
+
+    population = arg_population
+
+    result = Benchmark.realtime do
 
     #ruling_population = []
     #ruled_population = []
 
     #p population.size
+    count = 0
     population.each do |pop|
     #  ruling_population = population.reject{|item| item==pop}.select{|other| other.fitness[0]>pop.fitness[0] && other.fitness[1]>pop.fitness[1] && other.fitness[2]>pop.fitness[2]}
     #  ruled_population = population.reject{|item| item==pop}.select{|other| other.fitness[0]<pop.fitness[0] && other.fitness[1]<pop.fitness[1] && other.fitness[2]<pop.fitness[2]}
@@ -56,26 +68,61 @@ class NSGA_II
     #    pop.rank = rank
     #  end
 
-      pop.ruled = population.count{ |other| other.fitness.norm < pop.fitness.norm}
-      pop.ruling = population.count{ |other|  pop.fitness.norm < other.fitness.norm}
+    # STEP1.
+      #      各個体に対して，支配している個体の数と支配されている個体の数を同時に数えていく．（O(mN^2)）
+
+      ################3
+      # 評価値をそれぞれ引き算して，全部マイナスだったら劣ってる／優れてる？みたいな
+      ###################3
+
+
+#      pop.ruled = population.count{ |other| other.fitness.norm < pop.fitness.norm}
+
+      pop.ruled = population.count{ |other|
+        other.fitness[0] < pop.fitness[0]\
+        && other.fitness[1] < pop.fitness[1]\
+        && other.fitness[2] < pop.fitness[2]
+      }
+      #      pop.ruling = population.count{ |other|  pop.fitness.norm < other.fitness.norm}
+    count += 1
     end
 
     rank = 0
 
-    ranked_pop = population.select{|pop| pop.ruled==0}
+    begin
 
-    while ranked_pop.size > 0
+#      STEP2.
+#          ランク1（支配されている個体：０）の個体のみをフロント１用のリストF_1としてまとめる．
+#      STEP3.
+#          リストF_1に含まれる各個体（i）が支配している個体(j)に対して，支配されている数を1つづ引く
+#      STEP4.
+#      上記同様に，ランク1（最良のフロント）の個体のみをフロント2用のリストF_2としてまとめる．
+
       ranked_pop = population.select{|pop| pop.ruled==0}
-      ranked_pop.each{|pop| pop.rank = rank; pop.ruled -= 1}
 
       ranked_pop.each do |pop|
-        ruling_population = population.reject{|item| item==pop}.select{|other| pop.fitness.norm < other.fitness.norm}
+        ruling_population = population.select{|other|
+          other.fitness[0] < pop.fitness[0]\
+        && other.fitness[1] < pop.fitness[1]\
+        && other.fitness[2] < pop.fitness[2]
+        }
+
         ruling_population.each{|rpop| rpop.ruled -= 1}
+        pop.rank = rank
+        pop.ruled -= 1
       end
       rank += 1
+    end while ranked_pop.size > 0
+
+#      population.each do |pop|
+#        p pop.ruled
+#      end
+
     end
 
+#    puts result
 
+#    gets
 #    gets
 #    population.each{|pop| pop.ruled -=1}
 
@@ -159,7 +206,7 @@ class NSGA_II
       if gap < 0
         (gap.abs).times do |i|
           # ビットが1のインデックス
-          idxs = child[id].chromosome.map.with_index{|e,i| e == 1 ? i : nil}.compact.reject{|i| i < position}
+          idxs = child[id].chromosome.collect.with_index{|e,i| e == 1 ? i : nil}.compact.reject{|i| i < position}
           child[id].chromosome[idxs[rand(idxs.length-1)]] = 0
         end
       end
@@ -192,13 +239,8 @@ class NSGA_II
     # 突然変異
     #   0と1が隣り合う箇所を探し，それらの場所を入れ替える．
 
-
-
-
     # 混雑距離を計算
     @population = calc_crowding_distance(@population)
-
-
 
     # 上位N個体をP_t+1とする．
     # Step 4 新たなアーカイブ母集団 Pt+1 = φ を生成．変数 i = 1 とする．
@@ -241,9 +283,10 @@ class NSGA_II
       crossover([population_q[rand(population_q.length-1)],population_q[rand(population_q.length-1)]],rand(@population[0].chromosome.length-1)).map do |c|
         population_q << c
       end
+
     end
 
-      # 突然変異
+    # 突然変異
     population_q.each do |c|
       c.chromosome.map.with_index {|p,idx| rand(0.0..1.0) < 0.05 ? c.mutate(idx) : p}
     end
@@ -258,14 +301,22 @@ class NSGA_II
 
     population_q.each do |c|
       while c.chromosome.inject(&:+) > c.limit
-        c.chromosome[rand(0..c.chromosome.length)] = 0
+        c.chromosome[rand(0...c.chromosome.length)] = 0
       end
+
       effects = []
       c.chromosome.each_with_index do |bit,idx|
-        if bit == 1
-          effects += Aroma.get[idx][:effect]
-        end
+      begin
+          if bit == 1
+            effects += Aroma.get[idx][:effect]
+          end
+        rescue
+          puts %(chromosome size : #{c.chromosome.size})
+          p c.chromosome
+          Pushbullet::Device.all.first.push_note('error','')
       end
+      end
+
 
       if (req - effects).length > 0
         c.fitness = nil
@@ -299,7 +350,6 @@ class NSGA_II
     fast_nondominated_sort(@population)
 
     @population.sort_by!{|pop| pop.rank}
-
 
 #    gets
 
