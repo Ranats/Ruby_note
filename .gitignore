@@ -2,3 +2,4 @@
 GA/.idea
 !GA/glaph/*
 Timer/Gemfile
+GA/NSGA/.env

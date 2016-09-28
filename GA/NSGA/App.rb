@@ -207,7 +207,8 @@ if __FILE__ == $0
 
   n = 20
 
-  agent.population.take(n).each do |pop|
+#  agent.population.take(n).each do |pop|
+  agent.population.each do |pop|
     first_set << pop.fitness
   end
 
@@ -220,15 +221,27 @@ if __FILE__ == $0
 
 #    $elite << 1 / agent.population.first.fitness.norm / 10
 
-    if i % 1000
+    if $gen % 100  == 0
+
+      pop = []
+      agent.population.each do |po|
+        pop << po.chromosome
+      end
+
+      p pop.size - pop.uniq.size
 #      plot_pareto(agent.population)
 
       vec = []
-      agent.population.take(n).each do |pop|
+#      agent.population.take(n).each do |pop|
+      agent.population.each do |pop|
         vec << pop.fitness
       end
 
       plot(first_set,vec)
+    end
+
+    if $gen % 2500 == 0
+      Pushbullet::Device.all.first.push_note(%(generation:#{$gen}),'')
     end
   end
 
